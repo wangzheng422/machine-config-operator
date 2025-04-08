@@ -4,12 +4,14 @@
 
 ## 概述
 
-MCO 通常不*生成*新的证书或密钥（这通常由其他 OpenShift 组件处理，如 `service-ca-operator`、`ingress-operator` 或管理员手动操作）。相反，MCO/MCD 系统负责：
+MCO 通常不*直接生成*新的证书或密钥（这通常由其他 OpenShift 组件处理，如 `service-ca-operator`、`ingress-operator` 或管理员手动操作）。MCO 也不直接读取 `service-ca-operator` 等组件内部生成的 Secret。相反，MCO/MCD 系统依赖于一个解耦的机制，负责：
 
 1.  **检测**包含相关数据（例如，CA 捆绑包、拉取密钥、云提供商配置）的源 ConfigMap 和 Secret 的更改。
 2.  通过 `ControllerConfig` 自定义资源将这些更改**传播**到节点。
 3.  通过将文件写入节点文件系统上的正确位置，在每个节点上**应用**这些更改。
-4.  如果更改需要（例如，重大的 CA 更新），则**重启**相关服务（如 `kubelet`）。
+4.  如果更改需要（例如，重大的 CA 更新，通常通过 `ControllerConfig` 上的注解发出信号），则**重启**相关服务（如 `kubelet`）。
+
+
 
 ## 关键组件和逻辑流程
 
@@ -50,7 +52,11 @@ sequenceDiagram
 *   当在这些源中检测到更改时，Operator 会获取相关数据。
 *   它在必要时合并数据（例如，合并多个 CA 捆绑包，将镜像仓库拉取密钥与全局拉取密钥合并）。
 *   它使用最新的合并数据更新中央 `ControllerConfig` 自定义资源 (`machineconfiguration.openshift.io`)。此更新会更改 `ControllerConfig` 的 `resourceVersion`。
-*   它还可能更新 `ControllerConfig` 上的注解，例如 `service-ca.machineconfiguration.openshift.io/rotate`，以指示守护进程需要执行的特定操作。
+*   它还可能更新 `ControllerConfig` 上的注解，例如 `machineconfiguration.openshift.io/service-ca-rotate` (由常量 `ServiceCARotateAnnotation` 定义)，以指示守护进程需要执行的特定操作。
+
+**与 `service-ca-operator` 的交互:**
+
+需要强调的是，MCO 与 `service-ca-operator` 的交互是**间接**的。`service-ca-operator` 将其管理的 CA 证书发布到集群中**众所周知的 ConfigMap**（例如 `openshift-config-managed/kube-apiserver-client-ca`）。MCO Operator 会**监视**这些 ConfigMap。当这些 ConfigMap 更新时，MCO Operator 读取新的数据，并将其填充到 `ControllerConfig` CR 中。随后，MCO Daemon 从 `ControllerConfig` 读取数据并将其应用到节点上。因此，MCO 代码中不会包含直接读取 `service-ca-operator` 内部 Secret 的逻辑，而是通过监视标准的 ConfigMap 和 `ControllerConfig` CR 来实现解耦。
 
 **相关源代码片段:**
 
@@ -248,7 +254,7 @@ sequenceDiagram
     *   它从 `ControllerConfig` 读取 CA 数据（如 kubelet CA）。
     *   它将接收到的 CA 与当前存在于 `/etc/kubernetes/kubelet-ca.crt` 中的 CA 进行比较。
     *   如果发现差异，它会将新的捆绑包写入 `/etc/kubernetes/kubelet-ca.crt`。
-    *   如果检测到 `service-ca.machineconfiguration.openshift.io/rotate: "true"` 注解并且 CA 已更改，它会触发 `kubelet` 重启 (`systemctl stop kubelet`)。
+    *   如果检测到 `machineconfiguration.openshift.io/service-ca-rotate: "true"` 注解 (常量 `ServiceCARotateAnnotation` 的值) 并且 CA 已更改，它会触发 `kubelet` 重启 (`systemctl stop kubelet`)。
     *   它还处理合并内部镜像仓库拉取密钥并将其写入 `/etc/mco/internal-registry-pull-secret.json`。
 *   **通用文件/更新处理 (`pkg/daemon/update.go`):**
     *   主节点同步循环 (`syncNode`) 将期望的配置（从 `ControllerConfig` 派生）与当前节点状态进行比较。
@@ -256,7 +262,7 @@ sequenceDiagram
 
 **相关源代码片段:**
 
-*   `pkg/daemon/certificate_writer.go`: 包含 `syncControllerConfigHandler`，写入 `kubelet-ca.crt` 的逻辑，处理服务 CA 轮换注解，以及写入内部仓库拉取密钥。包括 `mergeMountedSecretsWithControllerConfig` 等函数。
+*   `pkg/daemon/certificate_writer.go`: 包含 `syncControllerConfigHandler`，写入 `kubelet-ca.crt` 的逻辑，处理服务 CA 轮换注解 (常量 `ServiceCARotateAnnotation`，值为 `machineconfiguration.openshift.io/service-ca-rotate`)，以及写入内部仓库拉取密钥。包括 `mergeMountedSecretsWithControllerConfig` 等函数。
 
     ```go
     // syncControllerConfigHandler handles updates from the ControllerConfig object.
