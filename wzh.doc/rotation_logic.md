@@ -56,6 +56,87 @@ sequenceDiagram
 
 *   `pkg/operator/sync.go`: 包含主同步循环 (`sync`)，以及用于获取 CA (`getCAsFromConfigMap`)、云配置 (`getCloudConfigFromConfigMap`) 和合并拉取密钥 (`getImageRegistryPullSecrets`) 的函数。
 
+    ```go
+    // sync is the main sync loop for the operator.
+    func (optr *Operator) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+        // ... other checks ...
+
+        // sync up the ControllerConfigSpec
+        // This sync loop fetches global config, CAs, pull secrets, etc., and stores them
+        // in optr.renderConfig.ControllerConfig
+        if err := optr.syncRenderConfig(optr.renderConfig); err != nil {
+            return fmt.Errorf("error syncing render config: %w", err)
+        }
+
+        // ... sync other components like MCC, MCD, MCS ...
+
+        // syncControllerConfig applies the ControllerConfig object based on optr.renderConfig
+        // This is typically called within syncMachineConfigController after ensuring the controller
+        // deployment is up-to-date.
+        // if err := optr.syncControllerConfig(optr.renderConfig); err != nil {
+        //     return err
+        // }
+
+        // ... other syncs ...
+        return nil
+    }
+
+    // getCAsFromConfigMap fetches CA data from a given key within a ConfigMap.
+    func getCAsFromConfigMap(cm *corev1.ConfigMap, key string) ([]byte, error) {
+        if bd, bdok := cm.BinaryData[key]; bdok {
+            return bd, nil
+        } else if d, dok := cm.Data[key]; dok {
+            // Handle potential base64 encoding
+            raw, err := base64.StdEncoding.DecodeString(d)
+            if err != nil {
+                // Assume it's not encoded if decode fails
+                return []byte(d), nil
+            }
+            return raw, nil
+        } else {
+            return nil, fmt.Errorf("%s not found in %s/%s", key, cm.Namespace, cm.Name)
+        }
+    }
+
+    // getCloudConfigFromConfigMap fetches cloud provider config data.
+    func getCloudConfigFromConfigMap(cm *corev1.ConfigMap, key string) (string, error) {
+        if cc, ok := cm.Data[key]; ok {
+            return cc, nil
+        }
+        return "", fmt.Errorf("%s not found in %s/%s", key, cm.Namespace, cm.Name)
+    }
+
+    // getImageRegistryPullSecrets fetches image registry pull secrets and merges them.
+    func (optr *Operator) getImageRegistryPullSecrets() ([]byte, error) {
+        // ... check if image registry exists ...
+
+        dockerConfigJSON := ctrlcommon.DockerConfigJSON{
+            Auths: map[string]ctrlcommon.DockerConfigEntry{},
+        }
+
+        // ... get secrets from machine-os-puller service account ...
+        for _, imagePullSecret := range imageRegistrySA.ImagePullSecrets {
+             // ... fetch secret ...
+             if err := ctrlcommon.MergeDockerConfigstoJSONMap(secret.Data[corev1.DockerConfigKey], dockerConfigJSON.Auths); err != nil {
+                 // ... handle error ...
+             }
+        }
+
+        // ... fetch global pull-secret ...
+        // ... convert global secret format if needed ...
+        err = ctrlcommon.MergeDockerConfigstoJSONMap(clusterPullSecretRawOld, dockerConfigJSON.Auths)
+        if err != nil {
+            return nil, fmt.Errorf("failed to merge global pull secret:  %w", err)
+        }
+
+        // ... add default route if needed ...
+
+        mergedPullSecrets, err := json.Marshal(dockerConfigJSON)
+        // ... handle marshal error ...
+        return mergedPullSecrets, nil
+    }
+    ```
+
 ### 2. MCO Daemon (`pkg/daemon/certificate_writer.go`, `pkg/daemon/update.go`)
 
 *   Daemon 在每个由 machineconfig 管理的节点上运行。
@@ -75,7 +156,294 @@ sequenceDiagram
 **相关源代码片段:**
 
 *   `pkg/daemon/certificate_writer.go`: 包含 `syncControllerConfigHandler`，写入 `kubelet-ca.crt` 的逻辑，处理服务 CA 轮换注解，以及写入内部仓库拉取密钥。包括 `mergeMountedSecretsWithControllerConfig` 等函数。
-*   `pkg/daemon/update.go`: 包含 `syncNode`、`updateFiles` 以及处理 SSH 密钥更新 (`updateSSHKeys`, `cleanSSHKeyPaths`) 的逻辑。定义了 `caBundleFilePath` 和 `postConfigChangeActionNone` 等常量。
+
+    ```go
+    // syncControllerConfigHandler handles updates from the ControllerConfig object.
+    func (dn *Daemon) syncControllerConfigHandler(key string) error {
+        // ... initial checks ...
+
+        controllerConfig, err := dn.ccLister.Get(ctrlcommon.ControllerConfigName)
+        // ... handle error ...
+
+        currentNodeControllerConfigResource := dn.node.Annotations[constants.ControllerConfigResourceVersionKey]
+
+        // Check if the ControllerConfig has changed or if a rotation is explicitly requested
+        if currentNodeControllerConfigResource != controllerConfig.ObjectMeta.ResourceVersion || controllerConfig.Annotations[ctrlcommon.ServiceCARotateAnnotation] == ctrlcommon.ServiceCARotateTrue {
+            pathToData := make(map[string][]byte)
+            kubeAPIServerServingCABytes := controllerConfig.Spec.KubeAPIServerServingCAData
+            cloudCA := controllerConfig.Spec.CloudProviderCAData
+            pathToData[caBundleFilePath] = kubeAPIServerServingCABytes // /etc/kubernetes/kubelet-ca.crt
+            pathToData[cloudCABundleFilePath] = cloudCA
+
+            // ... logic to handle kubeconfig CA rotation via kubeconfig-data ConfigMap ...
+            // This involves comparing CM data with on-disk /etc/kubernetes/kubeconfig
+            // and potentially adding the updated kubeconfig to pathToData
+
+            // Write CA bundles and potentially updated kubeconfig
+            if err := writeToDisk(pathToData); err != nil {
+                return err
+            }
+
+            // Sync image registry CAs
+            mergedData := append(controllerConfig.Spec.ImageRegistryBundleData, controllerConfig.Spec.ImageRegistryBundleUserData...)
+            // ... logic to clean old certs from /etc/docker/certs.d ...
+            for _, CA := range mergedData {
+                 caFile := strings.ReplaceAll(CA.File, "..", ":")
+                 // ... create dir /etc/docker/certs.d/<caFile> ...
+                 // ... write CA.Data to /etc/docker/certs.d/<caFile>/ca.crt ...
+            }
+
+            // Sync internal registry pull secret
+            if err := dn.syncOSImagePullSecrets(controllerConfig); err != nil {
+                 return err
+            }
+        }
+
+        // ... update node annotations with processed resourceVersion ...
+
+        // Check if rotation annotation is set and CA actually changed, then restart kubelet
+        if controllerConfig.Annotations[ctrlcommon.ServiceCARotateAnnotation] == ctrlcommon.ServiceCARotateTrue && /* kubeConfigDiff && !allCertsThere && */ !dn.deferKubeletRestart {
+             logSystem("restarting kubelet due to server-ca rotation")
+             if err := runCmdSync("systemctl", "stop", "kubelet"); err != nil {
+                 return err
+             }
+             // ... update /var/lib/kubelet/kubeconfig with new CA data ...
+             if err := runCmdSync("systemctl", "daemon-reload"); err != nil {
+                 return err
+             }
+             if err := runCmdSync("systemctl", "start", "kubelet"); err != nil {
+                 return err
+             }
+        }
+        return nil
+    }
+
+    // syncOSImagePullSecrets merges internal registry pull secret with potential mounted secrets.
+    func (dn *Daemon) syncOSImagePullSecrets(controllerConfig *mcfgv1.ControllerConfig) error {
+        // ... lock mutex ...
+        // ... get controllerConfig if nil ...
+
+        merged, err := reconcileOSImageRegistryPullSecretData(dn.node, controllerConfig, osImagePullSecretDir)
+        // ... handle error ...
+
+        // Writes to /etc/mco/internal-registry-pull-secret.json
+        if err := writeToDisk(map[string][]byte{imageRegistryAuthFile: merged}); err != nil {
+            return fmt.Errorf("could not write image pull secret data to node filesystem: %w", err)
+        }
+        // ... log success ...
+        return nil
+    }
+
+    // reconcileOSImageRegistryPullSecretData merges secrets from ControllerConfig and mounted secrets.
+    func reconcileOSImageRegistryPullSecretData(node *corev1.Node, controllerCfg *mcfgv1.ControllerConfig, secretDirPath string) ([]byte, error) {
+        // ... get node roles ...
+        mountedSecret, err := readMountedSecretByNodeRole(nodeRoles, secretDirPath)
+        // ... handle error ...
+
+        if mountedSecret == nil {
+            return controllerCfg.Spec.InternalRegistryPullSecret, nil
+        }
+
+        merged, err := mergeMountedSecretsWithControllerConfig(mountedSecret, controllerCfg)
+        // ... handle error ...
+        return merged, nil
+    }
+
+    // writeToDisk writes data to specified paths atomically.
+    func writeToDisk(pathToData map[string][]byte) error {
+        for bundle, data := range pathToData {
+            // ... ensure data ends with newline ...
+            // ... get existing file/dir modes ...
+            if err := writeFileAtomically(bundle, data, /* dirMode */, /* fileMode */, -1, -1); err != nil {
+                 return err
+            }
+        }
+        return nil
+    }
+    ```
+
+*   `pkg/daemon/update.go`: 包含 `syncNode`、`updateFiles` 以及处理 SSH 密钥更新 (`updateSSHKeys`, `cleanSSHKeyPaths`) 的逻辑。定义了 `caBundleFilePath` (在 certificate_writer.go 中使用) 和 `postConfigChangeActionNone` 等常量。
+
+    ```go
+    // syncNode compares the current config to the desired config and triggers
+    // an update if necessary.
+    func (dn *Daemon) syncNode() error {
+        // ... get current node state ...
+        state, err := dn.getStateAndConfigs()
+        // ... handle error ...
+
+        // Check if we are already in the desired config
+        if reflect.DeepEqual(state.currentConfig, state.desiredConfig) {
+            // ... handle already updated state ...
+            return nil
+        }
+
+        // Trigger the update process
+        return dn.triggerUpdateWithMachineConfig(state.currentConfig, state.desiredConfig, false)
+    }
+
+    // update is the main update function called by triggerUpdateWithMachineConfig.
+    func (dn *Daemon) update(oldConfig, newConfig *mcfgv1.MachineConfig, skipCertificateWrite bool) (retErr error) {
+        // ... set node state to Working ...
+        // ... parse ignition configs ...
+        // ... check reconcilability ...
+
+        diff, _ := reconcilable(oldConfig, newConfig) // Error already checked
+
+        // ... calculate postConfigChangeActions (legacy or NodeDisruptionPolicy based) ...
+        // ... perform drain if needed ...
+
+        // update files on disk that need updating
+        if err := dn.updateFiles(oldIgnConfig, newIgnConfig, skipCertificateWrite); err != nil {
+            return err
+        }
+        // ... defer rollback for updateFiles ...
+
+        // update file permissions (kubeconfig)
+        if err := dn.updateKubeConfigPermission(); err != nil {
+            return err
+        }
+
+        // only update passwd if it has changed
+        if diff.passwd {
+            if err := dn.updateSSHKeys(newIgnConfig.Passwd.Users, oldIgnConfig.Passwd.Users); err != nil {
+                return err
+            }
+            // ... defer rollback for updateSSHKeys ...
+        }
+
+        // Set password hash
+        if err := dn.SetPasswordHash(newIgnConfig.Passwd.Users, oldIgnConfig.Passwd.Users); err != nil {
+            return err
+        }
+        // ... defer rollback for SetPasswordHash ...
+
+        // Apply OS changes (rpm-ostree rebase, kargs, kernel type, extensions) if CoreOS
+        if dn.os.IsCoreOSVariant() {
+             coreOSDaemon := CoreOSDaemon{dn}
+             if err := coreOSDaemon.applyOSChanges(*diff, oldConfig, newConfig); err != nil {
+                 return err
+             }
+             // ... defer rollback for applyOSChanges ...
+        }
+
+        // ... update tuning args ...
+
+        // Store the new config as current on disk
+        odc := &onDiskConfig{currentConfig: newConfig}
+        if err := dn.storeCurrentConfigOnDisk(odc); err != nil {
+            return err
+        }
+        // ... defer rollback for storeCurrentConfigOnDisk ...
+
+        // Perform post-config change action (reboot, reload crio, none, etc.)
+        // This is where postConfigChangeActionNone is evaluated.
+        if fg != nil && fg.Enabled(features.FeatureGateNodeDisruptionPolicy) && nodeDisruptionError == nil {
+             return dn.performPostConfigChangeNodeDisruptionAction(nodeDisruptionActions, newConfig.GetName())
+        }
+        return dn.performPostConfigChangeAction(actions, newConfig.GetName())
+    }
+
+
+    // updateFiles writes files specified by the nodeconfig to disk.
+    func (dn *Daemon) updateFiles(oldIgnConfig, newIgnConfig ign3types.Config, skipCertificateWrite bool) error {
+        klog.Info("Updating files")
+        // Writes files from newIgnConfig.Storage.Files
+        if err := dn.writeFiles(newIgnConfig.Storage.Files, skipCertificateWrite); err != nil {
+            return err
+        }
+        // Writes systemd units from newIgnConfig.Systemd.Units
+        if err := dn.writeUnits(newIgnConfig.Systemd.Units); err != nil {
+            return err
+        }
+        // Deletes files/units present in oldIgnConfig but not in newIgnConfig
+        return dn.deleteStaleData(oldIgnConfig, newIgnConfig)
+    }
+
+    // Update a given PasswdUser's SSHKey
+    func (dn *Daemon) updateSSHKeys(newUsers, oldUsers []ign3types.PasswdUser) error {
+        // ... check if core user exists ...
+
+        var concatSSHKeys string
+        for _, u := range newUsers {
+            for _, k := range u.SSHAuthorizedKeys {
+                concatSSHKeys = concatSSHKeys + string(k) + "\n"
+            }
+        }
+
+        // Determine correct path based on OS version (RHCOS 8 vs 9+)
+        authKeyPath := constants.RHCOS8SSHKeyPath
+        if dn.useNewSSHKeyPath() {
+             authKeyPath = constants.RHCOS9SSHKeyPath
+             if err := cleanSSHKeyPaths(); err != nil { // Removes old path if exists
+                 return err
+             }
+             if err := removeNonIgnitionKeyPathFragments(); err != nil { // Removes other fragments in .d dir
+                 return err
+             }
+        }
+
+        // Write the concatenated keys atomically to the determined path
+        return dn.atomicallyWriteSSHKey(authKeyPath, concatSSHKeys)
+    }
+
+    // atomicallyWriteSSHKey writes SSH keys ensuring correct ownership and permissions.
+    func (dn *Daemon) atomicallyWriteSSHKey(authKeyPath, keys string) error {
+        uid, _ := lookupUID(constants.CoreUserName)
+        gid, _ := lookupGID(constants.CoreGroupName)
+
+        authKeyDir := filepath.Dir(authKeyPath)
+        if _, err := os.Stat(authKeyDir); os.IsNotExist(err) {
+            if err := createSSHKeyDir(authKeyDir); err != nil { // Ensures dir exists with core:core 0700
+                return err
+            }
+        }
+
+        // Writes the file with core:core 0600 permissions
+        if err := writeFileAtomically(authKeyPath, []byte(keys), os.FileMode(0o700), os.FileMode(0o600), uid, gid); err != nil {
+            return err
+        }
+        // ... log success ...
+        return nil
+    }
+
+    // calculatePostConfigChangeAction determines the action needed after applying config.
+    // postConfigChangeActionNone is used when only specific safe files change.
+    func calculatePostConfigChangeAction(diff *machineConfigDiff, diffFileSet []string) ([]string, error) {
+        // ... check for force file ...
+        // ... check for OS update, kargs, fips, units, kernelType, extensions (require reboot) ...
+
+        // Calculate actions based on file diffs
+        actions := calculatePostConfigChangeActionFromMCDiffs(diffFileSet)
+        return actions, nil
+    }
+
+    // calculatePostConfigChangeActionFromMCDiffs checks changed files against known safe/reload/restart lists.
+    func calculatePostConfigChangeActionFromMCDiffs(diffFileSet []string) (actions []string) {
+        filesPostConfigChangeActionNone := []string{
+            caBundleFilePath, // /etc/kubernetes/kubelet-ca.crt
+            "/var/lib/kubelet/config.json",
+        }
+        // ... other lists for reload/restart ...
+
+        actions = []string{postConfigChangeActionNone} // Default to none
+        for _, path := range diffFileSet {
+            if ctrlcommon.InSlice(path, filesPostConfigChangeActionNone) {
+                continue // Safe file, action remains 'none' unless overridden
+            } else if /* check reload list */ {
+                 actions = []string{postConfigChangeActionReloadCrio}
+            } else if /* check restart list */ {
+                 actions = []string{postConfigChangeActionRestartCrio}
+            } else if /* check safe directories */ {
+                 continue
+            } else {
+                 actions = []string{postConfigChangeActionReboot} // Unknown file change, require reboot
+                 return
+            }
+        }
+        return
+    }
+    ```
 
 ## 结论
 
