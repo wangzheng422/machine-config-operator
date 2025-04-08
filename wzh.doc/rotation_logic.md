@@ -54,34 +54,103 @@ sequenceDiagram
 
 **相关源代码片段:**
 
-*   `pkg/operator/sync.go`: 包含主同步循环 (`sync`)，以及用于获取 CA (`getCAsFromConfigMap`)、云配置 (`getCloudConfigFromConfigMap`) 和合并拉取密钥 (`getImageRegistryPullSecrets`) 的函数。
+*   `pkg/operator/sync.go`: 包含用于准备渲染配置 (`syncRenderConfig`) 的逻辑，以及用于获取 CA (`getCAsFromConfigMap`)、云配置 (`getCloudConfigFromConfigMap`) 和合并拉取密钥 (`getImageRegistryPullSecrets`) 的辅助函数。主同步循环由 `syncAll` 编排。
 
     ```go
-    // sync is the main sync loop for the operator.
-    func (optr *Operator) sync(ctx context.Context, syncCtx factory.SyncContext) error {
-        // ... other checks ...
+    // syncRenderConfig gathers all necessary configuration (infra, network, CAs, pull secrets, images, etc.)
+    // and populates the optr.renderConfig structure, which is then used to render various manifests.
+    func (optr *Operator) syncRenderConfig(_ *renderConfig) error {
+        // ... check if inClusterBringup ...
 
-        // sync up the ControllerConfigSpec
-        // This sync loop fetches global config, CAs, pull secrets, etc., and stores them
-        // in optr.renderConfig.ControllerConfig
-        if err := optr.syncRenderConfig(optr.renderConfig); err != nil {
-            return fmt.Errorf("error syncing render config: %w", err)
+        // sync up the images used by operands.
+        imgsRaw, err := os.ReadFile(optr.imagesFile)
+        // ... handle error & unmarshal ...
+
+        // handle image registry certificates.
+        cfg, err := optr.imgLister.Get("cluster")
+        // ... handle error & process AdditionalTrustedCA ...
+        // ... process image-registry-ca ConfigMap ...
+        // ... merge CAs and update/create merged-trusted-image-registry-ca ConfigMap ...
+
+        // sync up CAs
+        rootCA, err := optr.getCAsFromConfigMap("kube-system", "root-ca", "ca.crt")
+        // ... handle error ...
+
+        // Determine if bootstrap is complete
+        _, err = optr.clusterCmLister.ConfigMaps("kube-system").Get("bootstrap")
+        // ... handle bootstrap status ...
+
+        var kubeAPIServerServingCABytes []byte
+        var internalRegistryPullSecret []byte
+        if bootstrapComplete && !optr.inClusterBringup {
+            kubeAPIServerServingCABytes, err = optr.getCAsFromConfigMap("openshift-config-managed", "kube-apiserver-client-ca", "ca-bundle.crt")
+            // ... handle error ...
+            internalRegistryPullSecret, err = optr.getImageRegistryPullSecrets()
+            // ... handle error ...
+        } else {
+            // ... logic for initial/bootstrap CA bundle ...
+            internalRegistryPullSecret = nil
         }
 
-        // ... sync other components like MCC, MCD, MCS ...
+        bundle := make([]byte, 0)
+        bundle = append(bundle, rootCA...)
+        // bundle = append(bundle, kubeAPIServerServingCABytes...) // Note: This line seems commented out in the source
 
-        // syncControllerConfig applies the ControllerConfig object based on optr.renderConfig
-        // This is typically called within syncMachineConfigController after ensuring the controller
-        // deployment is up-to-date.
-        // if err := optr.syncControllerConfig(optr.renderConfig); err != nil {
-        //     return err
-        // }
+        // sync up os image url
+        oscontainer, osextensionscontainer, err := optr.getOsImageURLs(optr.namespace)
+        // ... handle error & update imgs struct ...
 
-        // ... other syncs ...
+        // sync up the ControllerConfigSpec
+        infra, network, proxy, dns, err := optr.getGlobalConfig()
+        // ... handle error ...
+        spec, err := createDiscoveredControllerConfigSpec(infra, network, proxy, dns)
+        // ... handle error ...
+
+        // Process AdditionalTrustBundle and Proxy Trust Bundle
+        var trustBundle []byte
+        // ... logic to fetch and merge user-ca-bundle and proxy trustedCA ...
+        spec.AdditionalTrustBundle = trustBundle
+
+        // Sync cloud provider config if needed
+        if err := optr.syncCloudConfig(spec, infra); err != nil {
+            return err
+        }
+
+        spec.KubeAPIServerServingCAData = kubeAPIServerServingCABytes
+        spec.RootCAData = bundle // Note: Seems to only contain rootCA based on current source
+        spec.ImageRegistryBundleData = imgRegistryData
+        spec.ImageRegistryBundleUserData = imgRegistryUsrData
+        spec.PullSecret = &corev1.ObjectReference{Namespace: "openshift-config", Name: "pull-secret"}
+        spec.InternalRegistryPullSecret = internalRegistryPullSecret
+        spec.BaseOSContainerImage = imgs.BaseOSContainerImage
+        spec.BaseOSExtensionsContainerImage = imgs.BaseOSExtensionsContainerImage
+        spec.Images = map[string]string{
+            // ... image mappings ...
+        }
+
+        // Create pointer config
+        ignitionHost, err := getIgnitionHost(&infra.Status)
+        // ... handle error ...
+        pointerConfig, err := ctrlcommon.PointerConfig(ignitionHost, rootCA)
+        // ... handle error & marshal ...
+
+        // Handle OnClusterBuild feature gate and MachineOSConfigs
+        isOnClusterBuildEnabled, err := optr.isOnClusterBuildFeatureGateEnabled()
+        // ... handle error ...
+        var moscs []*mcfgv1alpha1.MachineOSConfig
+        if isOnClusterBuildEnabled {
+             moscs, err = optr.getAndValidateMachineOSConfigs()
+             // ... handle error ...
+        }
+
+        // create renderConfig
+        optr.renderConfig = getRenderConfig(optr.namespace, string(kubeAPIServerServingCABytes), spec, &imgs.RenderConfigImages, infra.Status.APIServerInternalURL, pointerConfigData, moscs)
+
         return nil
     }
 
     // getCAsFromConfigMap fetches CA data from a given key within a ConfigMap.
+    // It checks BinaryData first, then Data (handling potential base64 encoding).
     func getCAsFromConfigMap(cm *corev1.ConfigMap, key string) ([]byte, error) {
         if bd, bdok := cm.BinaryData[key]; bdok {
             return bd, nil
@@ -98,42 +167,74 @@ sequenceDiagram
         }
     }
 
-    // getCloudConfigFromConfigMap fetches cloud provider config data.
+    // getCloudConfigFromConfigMap fetches cloud provider config data from the "cloud.conf" key.
     func getCloudConfigFromConfigMap(cm *corev1.ConfigMap, key string) (string, error) {
+        // 'key' parameter is usually "cloud.conf" when called by syncCloudConfig
         if cc, ok := cm.Data[key]; ok {
             return cc, nil
         }
         return "", fmt.Errorf("%s not found in %s/%s", key, cm.Namespace, cm.Name)
     }
 
-    // getImageRegistryPullSecrets fetches image registry pull secrets and merges them.
+    // getImageRegistryPullSecrets fetches image registry pull secrets from the
+    // machine-os-puller service account, merges them with the global pull-secret,
+    // and potentially adds a default route entry.
     func (optr *Operator) getImageRegistryPullSecrets() ([]byte, error) {
-        // ... check if image registry exists ...
+        // Check if image registry operator exists
+        co, err := optr.mcoCOLister.Get("image-registry")
+        // ... handle registry operator existence checks ...
+
+        // Get DNS cluster object for default route construction
+        dns, err := optr.dnsLister.Get("cluster")
+        // ... handle error ...
 
         dockerConfigJSON := ctrlcommon.DockerConfigJSON{
             Auths: map[string]ctrlcommon.DockerConfigEntry{},
         }
 
-        // ... get secrets from machine-os-puller service account ...
+        // Get secrets from machine-os-puller service account
+        imageRegistrySA, err := optr.mcoSALister.ServiceAccounts(optr.namespace).Get("machine-os-puller")
+        // ... handle error (e.g., SA not existing yet during upgrade) ...
+
+        // Loop through SA's ImagePullSecrets
         for _, imagePullSecret := range imageRegistrySA.ImagePullSecrets {
-             // ... fetch secret ...
+             secret, err := optr.mcoSecretLister.Secrets(optr.namespace).Get(imagePullSecret.Name)
+             // ... handle error ...
+             // Merge secret into dockerConfigJSON.Auths
              if err := ctrlcommon.MergeDockerConfigstoJSONMap(secret.Data[corev1.DockerConfigKey], dockerConfigJSON.Auths); err != nil {
-                 // ... handle error ...
+                 return nil, fmt.Errorf("could not merge auths from secret %s: %w", imagePullSecret.Name, err)
              }
         }
 
-        // ... fetch global pull-secret ...
-        // ... convert global secret format if needed ...
+        // Fetch global pull-secret from openshift-config
+        clusterPullSecret, err := optr.ocSecretLister.Secrets("openshift-config").Get("pull-secret")
+        // ... handle error & type check ...
+        clusterPullSecretRaw := clusterPullSecret.Data[corev1.DockerConfigJsonKey]
+
+        // Convert global secret format if needed (dockerconfigjson -> dockercfg)
+        clusterPullSecretRawOld, err := ctrlcommon.ConvertSecretTodockercfg(clusterPullSecretRaw)
+        // ... handle error ...
+
+        // Merge converted global pull secret
         err = ctrlcommon.MergeDockerConfigstoJSONMap(clusterPullSecretRawOld, dockerConfigJSON.Auths)
         if err != nil {
             return nil, fmt.Errorf("failed to merge global pull secret:  %w", err)
         }
 
-        // ... add default route if needed ...
+        // Add default route entry if internal registry route exists
+        if entry, ok := dockerConfigJSON.Auths["image-registry.openshift-image-registry.svc:5000"]; ok {
+            assembledDefaultRoute := "default-route-openshift-image-registry.apps." + dns.Spec.BaseDomain
+            dockerConfigJSON.Auths[assembledDefaultRoute] = entry
+        }
 
-        mergedPullSecrets, err := json.Marshal(dockerConfigJSON)
-        // ... handle marshal error ...
-        return mergedPullSecrets, nil
+        // Marshal the final merged secrets if Auths is not empty
+        if len(dockerConfigJSON.Auths) > 0 {
+            mergedPullSecrets, err := json.Marshal(dockerConfigJSON)
+            // ... handle marshal error ...
+            return mergedPullSecrets, nil
+        }
+
+        return nil, nil // Return nil if no auths were merged
     }
     ```
 
