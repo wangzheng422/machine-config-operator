@@ -24,15 +24,15 @@ sequenceDiagram
     participant Node Filesystem
     participant Kubelet (Node Service)
 
-    External Source->>MCO Operator: Update Secret/ConfigMap\n(e.g., CA bundle, pull-secret)
+    External Source->>MCO Operator: Update Secret/ConfigMap<br>(e.g., CA bundle, pull-secret)
     Note over MCO Operator: Or rotation annotation added to ControllerConfig
     MCO Operator->>ControllerConfig CR: Read source data (CAs, secrets, etc.)
-    MCO Operator->>ControllerConfig CR: Update ControllerConfig CR \n(new data, resourceVersion, annotations)
-    MCO Daemon (Node)->>ControllerConfig CR: Watch for changes \n(based on resourceVersion, annotations)
+    MCO Operator->>ControllerConfig CR: Update ControllerConfig CR <br>(new data, resourceVersion, annotations)
+    MCO Daemon (Node)->>ControllerConfig CR: Watch for changes <br>(based on resourceVersion, annotations)
     MCO Daemon (Node)-->>ControllerConfig CR: Detect updated ControllerConfig
     MCO Daemon (Node)->>Node Filesystem: Read new cert/key data from CR
     MCO Daemon (Node)->>Node Filesystem: Compare with existing files on disk
-    MCO Daemon (Node)->>Node Filesystem: Write updated files \n(e.g., /etc/kubernetes/kubelet-ca.crt, \n/etc/mco/internal-registry-pull-secret.json, \n/home/core/.ssh/*)
+    MCO Daemon (Node)->>Node Filesystem: Write updated files <br>(e.g., /etc/kubernetes/kubelet-ca.crt, <br>/etc/mco/internal-registry-pull-secret.json, <br>/home/core/.ssh/*)
     alt CA Rotation Detected (via annotation)
         MCO Daemon (Node)->>Kubelet (Node Service): Restart Kubelet
     end
