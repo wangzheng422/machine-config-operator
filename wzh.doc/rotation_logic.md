@@ -1,82 +1,82 @@
-# OpenShift Machine Config Operator Certificate/Secret Rotation Logic
+# OpenShift Machine Config Operator 证书/密钥轮换逻辑
 
-This document outlines the logic used by the Machine Config Operator (MCO) and its associated components (like the Machine Config Daemon - MCD) to handle the rotation and distribution of certificates, secrets, and keys to OpenShift nodes as of version 4.16 (based on the analyzed codebase).
+本文档概述了 Machine Config Operator (MCO) 及其相关组件（如 Machine Config Daemon - MCD）用于处理证书、密钥和秘钥轮换并将其分发到 OpenShift 节点的逻辑（基于对 4.16 版本代码库的分析）。
 
-## Overview
+## 概述
 
-The MCO doesn't typically *generate* new certificates or secrets itself (this is often handled by other OpenShift components like `service-ca-operator`, `ingress-operator`, or manual admin actions). Instead, the MCO/MCD system is responsible for:
+MCO 通常不*生成*新的证书或密钥（这通常由其他 OpenShift 组件处理，如 `service-ca-operator`、`ingress-operator` 或管理员手动操作）。相反，MCO/MCD 系统负责：
 
-1.  **Detecting** changes in source ConfigMaps and Secrets that contain relevant data (e.g., CA bundles, pull secrets, cloud provider configs).
-2.  **Propagating** these changes to the nodes via the `ControllerConfig` custom resource.
-3.  **Applying** these changes on each node by writing files to the correct locations on the node's filesystem.
-4.  **Restarting** relevant services (like `kubelet`) if a change necessitates it (e.g., a significant CA update).
+1.  **检测**包含相关数据（例如，CA 捆绑包、拉取密钥、云提供商配置）的源 ConfigMap 和 Secret 的更改。
+2.  通过 `ControllerConfig` 自定义资源将这些更改**传播**到节点。
+3.  通过将文件写入节点文件系统上的正确位置，在每个节点上**应用**这些更改。
+4.  如果更改需要（例如，重大的 CA 更新），则**重启**相关服务（如 `kubelet`）。
 
-## Key Components and Logic Flow
+## 关键组件和逻辑流程
 
-The process involves two main actors: the MCO Operator running centrally and the MCD running as a DaemonSet on each node.
+该过程涉及两个主要参与者：集中运行的 MCO Operator 和在每个节点上作为 DaemonSet 运行的 MCD。
 
 ```mermaid
 sequenceDiagram
-    participant External Source
+    participant 外部源
     participant MCO Operator
     participant ControllerConfig CR
-    participant MCO Daemon (Node)
-    participant Node Filesystem
-    participant Kubelet (Node Service)
+    participant MCO Daemon (节点)
+    participant 节点文件系统
+    participant Kubelet (节点服务)
 
-    External Source->>MCO Operator: Update Secret/ConfigMap (e.g., CA bundle, pull-secret)
-    Note over MCO Operator: Or rotation annotation added to ControllerConfig
-    MCO Operator->>ControllerConfig CR: Read source data (CAs, secrets, etc.)
-    MCO Operator->>ControllerConfig CR: Update ControllerConfig CR (new data, resourceVersion, annotations)
-    MCO Daemon (Node)->>ControllerConfig CR: Watch for changes (based on resourceVersion, annotations)
-    MCO Daemon (Node)-->>ControllerConfig CR: Detect updated ControllerConfig
-    MCO Daemon (Node)->>Node Filesystem: Read new cert/secret data from CR
-    MCO Daemon (Node)->>Node Filesystem: Compare with existing files on disk
-    MCO Daemon (Node)->>Node Filesystem: Write updated files (e.g., /etc/kubernetes/kubelet-ca.crt, /etc/mco/internal-registry-pull-secret.json, /home/core/.ssh/*)
-    alt CA Rotation Detected (via annotation)
-        MCO Daemon (Node)->>Kubelet (Node Service): Restart Kubelet
+    外部源->>MCO Operator: 更新 Secret/ConfigMap (例如, CA 捆绑包, pull-secret)
+    Note over MCO Operator: 或轮换注解添加到 ControllerConfig
+    MCO Operator->>ControllerConfig CR: 读取源数据 (CAs, secrets 等)
+    MCO Operator->>ControllerConfig CR: 更新 ControllerConfig CR (新数据, resourceVersion, 注解)
+    MCO Daemon (节点)->>ControllerConfig CR: 监视更改 (基于 resourceVersion, 注解)
+    MCO Daemon (节点)-->>ControllerConfig CR: 检测到更新的 ControllerConfig
+    MCO Daemon (节点)->>节点文件系统: 从 CR 读取新的证书/密钥数据
+    MCO Daemon (节点)->>节点文件系统: 与磁盘上的现有文件比较
+    MCO Daemon (节点)->>节点文件系统: 写入更新的文件 (例如, /etc/kubernetes/kubelet-ca.crt, /etc/mco/internal-registry-pull-secret.json, /home/core/.ssh/*)
+    alt 检测到 CA 轮换 (通过注解)
+        MCO Daemon (节点)->>Kubelet (节点服务): 重启 Kubelet
     end
 
 ```
 
 ### 1. MCO Operator (`pkg/operator/sync.go`)
 
-*   The operator runs as a central deployment.
-*   It watches various source ConfigMaps and Secrets across the cluster, primarily in the `openshift-config` and `openshift-config-managed` namespaces. Examples include:
+*   Operator 作为中央部署运行。
+*   它监视集群中的各种源 ConfigMap 和 Secret，主要在 `openshift-config` 和 `openshift-config-managed` 命名空间中。示例包括：
     *   `pull-secret` (Secret)
-    *   `kube-cloud-config` (ConfigMap for cloud provider details)
-    *   CA bundles (e.g., `*-ca-bundle` ConfigMaps)
-    *   Image registry pull secrets associated with the MCO service account.
-*   When changes are detected in these sources, the operator fetches the relevant data.
-*   It merges data where necessary (e.g., combining multiple CA bundles, merging image registry pull secrets with the global pull secret).
-*   It updates the central `ControllerConfig` custom resource (`machineconfiguration.openshift.io`) with the latest consolidated data. This update changes the `resourceVersion` of the `ControllerConfig`.
-*   It may also update annotations on the `ControllerConfig`, such as `service-ca.machineconfiguration.openshift.io/rotate`, to signal specific actions needed by the daemon.
+    *   `kube-cloud-config` (用于云提供商详细信息的 ConfigMap)
+    *   CA 捆绑包 (例如, `*-ca-bundle` ConfigMaps)
+    *   与 MCO 服务帐户关联的镜像仓库拉取密钥。
+*   当在这些源中检测到更改时，Operator 会获取相关数据。
+*   它在必要时合并数据（例如，合并多个 CA 捆绑包，将镜像仓库拉取密钥与全局拉取密钥合并）。
+*   它使用最新的合并数据更新中央 `ControllerConfig` 自定义资源 (`machineconfiguration.openshift.io`)。此更新会更改 `ControllerConfig` 的 `resourceVersion`。
+*   它还可能更新 `ControllerConfig` 上的注解，例如 `service-ca.machineconfiguration.openshift.io/rotate`，以指示守护进程需要执行的特定操作。
 
-**Relevant Source Code Snippets:**
+**相关源代码片段:**
 
-*   `pkg/operator/sync.go`: Contains the main sync loop (`sync`), functions to fetch CAs (`getCAsFromConfigMap`), cloud config (`getCloudConfigFromConfigMap`), and merge pull secrets (`getImageRegistryPullSecrets`).
+*   `pkg/operator/sync.go`: 包含主同步循环 (`sync`)，以及用于获取 CA (`getCAsFromConfigMap`)、云配置 (`getCloudConfigFromConfigMap`) 和合并拉取密钥 (`getImageRegistryPullSecrets`) 的函数。
 
 ### 2. MCO Daemon (`pkg/daemon/certificate_writer.go`, `pkg/daemon/update.go`)
 
-*   The daemon runs on every machineconfig-managed node.
-*   It watches the `ControllerConfig` custom resource.
-*   When it detects a change in the `ControllerConfig` (by comparing the `metadata.resourceVersion` it last processed, stored in an annotation on the Node object, with the current version), it triggers a sync.
-*   **Certificate Handling (`pkg/daemon/certificate_writer.go`):**
-    *   The `syncControllerConfigHandler` function specifically handles certificate updates derived from the `ControllerConfig`.
-    *   It reads CA data (like the kubelet CA) from the `ControllerConfig`.
-    *   It compares the received CAs with the ones currently present in `/etc/kubernetes/kubelet-ca.crt`.
-    *   If differences are found, it writes the new bundle to `/etc/kubernetes/kubelet-ca.crt`.
-    *   If the `service-ca.machineconfiguration.openshift.io/rotate: "true"` annotation is detected and CAs have changed, it triggers a `kubelet` restart (`systemctl stop kubelet`).
-    *   It also handles merging and writing the internal image registry pull secret to `/etc/mco/internal-registry-pull-secret.json`.
-*   **General File/Update Handling (`pkg/daemon/update.go`):**
-    *   The main node sync loop (`syncNode`) compares the desired config (derived from `ControllerConfig`) with the current node state.
-    *   The `updateFiles` function handles writing general files defined in the MachineConfig, including SSH keys (`/home/core/.ssh/authorized_keys` or `/home/core/.ssh/authorized_keys.d/ignition`). Changes to SSH keys or the main pull secret (`/var/lib/kubelet/config.json`) are often treated as `postConfigChangeActionNone`, meaning they don't typically require a reboot or drain, just file updates.
+*   Daemon 在每个由 machineconfig 管理的节点上运行。
+*   它监视 `ControllerConfig` 自定义资源。
+*   当它检测到 `ControllerConfig` 中的更改时（通过比较它上次处理的 `metadata.resourceVersion`（存储在 Node 对象的注解中）与当前版本），它会触发同步。
+*   **证书处理 (`pkg/daemon/certificate_writer.go`):**
+    *   `syncControllerConfigHandler` 函数专门处理从 `ControllerConfig` 派生的证书更新。
+    *   它从 `ControllerConfig` 读取 CA 数据（如 kubelet CA）。
+    *   它将接收到的 CA 与当前存在于 `/etc/kubernetes/kubelet-ca.crt` 中的 CA 进行比较。
+    *   如果发现差异，它会将新的捆绑包写入 `/etc/kubernetes/kubelet-ca.crt`。
+    *   如果检测到 `service-ca.machineconfiguration.openshift.io/rotate: "true"` 注解并且 CA 已更改，它会触发 `kubelet` 重启 (`systemctl stop kubelet`)。
+    *   它还处理合并内部镜像仓库拉取密钥并将其写入 `/etc/mco/internal-registry-pull-secret.json`。
+*   **通用文件/更新处理 (`pkg/daemon/update.go`):**
+    *   主节点同步循环 (`syncNode`) 将期望的配置（从 `ControllerConfig` 派生）与当前节点状态进行比较。
+    *   `updateFiles` 函数处理写入 MachineConfig 中定义的通用文件，包括 SSH 密钥 (`/home/core/.ssh/authorized_keys` 或 `/home/core/.ssh/authorized_keys.d/ignition`)。对 SSH 密钥或主拉取密钥 (`/var/lib/kubelet/config.json`) 的更改通常被视为 `postConfigChangeActionNone`，这意味着它们通常不需要重启或驱逐节点，只需更新文件。
 
-**Relevant Source Code Snippets:**
+**相关源代码片段:**
 
-*   `pkg/daemon/certificate_writer.go`: Contains `syncControllerConfigHandler`, logic for writing `kubelet-ca.crt`, handling the service CA rotation annotation, and writing the internal registry pull secret. Includes functions like `mergeMountedSecretsWithControllerConfig`.
-*   `pkg/daemon/update.go`: Contains `syncNode`, `updateFiles`, and logic for handling SSH key updates (`updateSSHKeys`, `cleanSSHKeyPaths`). Defines constants like `caBundleFilePath` and `postConfigChangeActionNone`.
+*   `pkg/daemon/certificate_writer.go`: 包含 `syncControllerConfigHandler`，写入 `kubelet-ca.crt` 的逻辑，处理服务 CA 轮换注解，以及写入内部仓库拉取密钥。包括 `mergeMountedSecretsWithControllerConfig` 等函数。
+*   `pkg/daemon/update.go`: 包含 `syncNode`、`updateFiles` 以及处理 SSH 密钥更新 (`updateSSHKeys`, `cleanSSHKeyPaths`) 的逻辑。定义了 `caBundleFilePath` 和 `postConfigChangeActionNone` 等常量。
 
-## Conclusion
+## 结论
 
-The MCO system provides a robust mechanism for distributing updated certificates and secrets to nodes. The operator centralizes the gathering and merging of data into the `ControllerConfig` CR, while the daemon on each node ensures these changes are applied locally to the filesystem and triggers necessary service restarts based on specific signals like annotations. This separation allows for consistent configuration across the cluster nodes.
+MCO 系统提供了一个强大的机制，用于将更新的证书和密钥分发到节点。Operator 集中收集数据并将其合并到 `ControllerConfig` CR 中，而每个节点上的 Daemon 则确保这些更改在本地应用于文件系统，并根据注解等特定信号触发必要的服务重启。这种分离允许在集群节点之间实现一致的配置。
