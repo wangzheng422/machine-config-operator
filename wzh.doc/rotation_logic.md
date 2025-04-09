@@ -1,6 +1,6 @@
 # OpenShift Machine Config Operator 证书/密钥轮换逻辑
 
-本文档概述了 Machine Config Operator (MCO) 及其相关组件（如 Machine Config Daemon - MCD）用于处理证书、密钥和秘钥轮换并将其分发到 OpenShift 节点的逻辑（基于对 4.16 版本代码库的分析）。
+本文档概述了 [Machine Config Operator (MCO)](https://github.com/openshift/machine-config-operator) 及其相关组件（如 Machine Config Daemon - MCD）用于处理证书、密钥和秘钥轮换并将其分发到 OpenShift 节点的逻辑（基于对 4.16 版本代码库的分析）。
 
 ## 概述
 
