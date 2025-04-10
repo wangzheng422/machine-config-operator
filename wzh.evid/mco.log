@@ -1,0 +1,93 @@
+这个是 machine-config deamon 的日志，可以看到他好像从 rpm-ostree 开始。 
+
+I0410 14:23:22.661425    4014 rpm-ostree.go:394] Running captured: rpm-ostree kargs
+I0410 14:23:23.023709    4014 daemon.go:593] Preflight config drift check successful (took 1.584220134s)
+I0410 14:23:23.027344    4014 config_drift_monitor.go:255] Config Drift Monitor has shut down
+I0410 14:23:23.053326    4014 update.go:2140] Adding SIGTERM protection
+I0410 14:23:23.081875    4014 update.go:542] Checking Reconcilable for config rendered-master-846b5b0751bab516cd000e1aa8e2ad0e to rendered-master-e52602b4b0ce947dcf081ee57704f0b6
+I0410 14:23:23.135821    4014 update.go:2118] Starting update from rendered-master-846b5b0751bab516cd000e1aa8e2ad0e to rendered-master-e52602b4b0ce947dcf081ee57704f0b6: &{osUpdate:false kargs:false fips:false passwd:false files:true units:false kernelType:false extensions:false}
+I0410 14:23:23.139970    4014 helpers.go:896] File diff: detected change to /etc/kubernetes/kubelet-ca.crt
+I0410 14:23:23.140041    4014 update.go:573] Changes do not require drain, skipping.
+I0410 14:23:23.140048    4014 update.go:1244] Updating files
+I0410 14:23:23.140053    4014 update.go:1650] Writing file "/usr/local/bin/nm-clean-initrd-state.sh"
+I0410 14:23:23.142173    4014 update.go:1650] Writing file "/etc/NetworkManager/conf.d/20-keyfiles.conf"
+I0410 14:23:23.144161    4014 update.go:1650] Writing file "/etc/pki/ca-trust/source/anchors/openshift-config-user-ca-bundle.crt"
+I0410 14:23:23.145339    4014 update.go:1650] Writing file "/etc/kubernetes/apiserver-url.env"
+I0410 14:23:23.147250    4014 update.go:1650] Writing file "/etc/audit/rules.d/mco-audit-quiet-containers.rules"
+I0410 14:23:23.153015    4014 update.go:1650] Writing file "/etc/tmpfiles.d/cleanup-cni.conf"
+I0410 14:23:23.155145    4014 update.go:1650] Writing file "/etc/kubernetes/static-pod-resources/configmaps/cloud-config/ca-bundle.pem"
+I0410 14:23:23.156868    4014 update.go:1650] Writing file "/usr/local/bin/configure-ovs.sh"
+I0410 14:23:23.160623    4014 update.go:1650] Writing file "/etc/containers/storage.conf"
+I0410 14:23:23.162624    4014 update.go:1650] Writing file "/etc/mco/proxy.env"
+I0410 14:23:23.164442    4014 update.go:1650] Writing file "/etc/systemd/system.conf.d/10-default-env-godebug.conf"
+I0410 14:23:23.166479    4014 update.go:1650] Writing file "/etc/modules-load.d/iptables.conf"
+I0410 14:23:23.168552    4014 update.go:1650] Writing file "/etc/node-sizing-enabled.env"
+I0410 14:23:23.170814    4014 update.go:1650] Writing file "/usr/local/sbin/dynamic-system-reserved-calc.sh"
+I0410 14:23:23.173155    4014 update.go:1650] Writing file "/etc/kubernetes/kubelet-ca.crt"
+I0410 14:23:23.175331    4014 update.go:1650] Writing file "/etc/systemd/system.conf.d/kubelet-cgroups.conf"
+I0410 14:23:23.177168    4014 update.go:1650] Writing file "/etc/systemd/system/kubelet.service.d/20-logging.conf"
+I0410 14:23:23.179084    4014 update.go:1650] Writing file "/etc/NetworkManager/conf.d/sdn.conf"
+I0410 14:23:23.180860    4014 update.go:1650] Writing file "/etc/NetworkManager/dispatcher.d/pre-up.d/10-ofport-request.sh"
+I0410 14:23:23.183064    4014 update.go:1650] Writing file "/var/lib/kubelet/config.json"
+I0410 14:23:23.185192    4014 update.go:1650] Writing file "/etc/kubernetes/ca.crt"
+I0410 14:23:23.187098    4014 update.go:1650] Writing file "/etc/sysctl.d/forward.conf"
+I0410 14:23:23.189019    4014 update.go:1650] Writing file "/etc/sysctl.d/inotify.conf"
+I0410 14:23:23.190891    4014 update.go:1650] Writing file "/usr/local/bin/aws-kubelet-nodename"
+I0410 14:23:23.192760    4014 update.go:1650] Writing file "/usr/local/bin/aws-kubelet-providerid"
+I0410 14:23:23.194680    4014 update.go:1650] Writing file "/usr/local/bin/mco-hostname"
+I0410 14:23:23.196580    4014 update.go:1650] Writing file "/usr/local/bin/recover-kubeconfig.sh"
+I0410 14:23:23.198372    4014 update.go:1650] Writing file "/etc/kubernetes/kubelet-plugins/volume/exec/.dummy"
+I0410 14:23:23.199336    4014 update.go:1650] Writing file "/etc/NetworkManager/dispatcher.d/99-vsphere-disable-tx-udp-tnl"
+I0410 14:23:23.201452    4014 update.go:1650] Writing file "/etc/containers/registries.conf"
+I0410 14:23:23.203429    4014 update.go:1650] Writing file "/etc/crio/crio.conf.d/00-default"
+I0410 14:23:23.205539    4014 update.go:1650] Writing file "/etc/containers/policy.json"
+I0410 14:23:23.207428    4014 update.go:1650] Writing file "/etc/kubernetes/cloud.conf"
+I0410 14:23:23.208528    4014 update.go:1650] Writing file "/etc/kubernetes/kubelet.conf"
+I0410 14:23:23.210344    4014 update.go:1650] Writing file "/usr/local/bin/kubenswrapper"
+I0410 14:23:23.212378    4014 update.go:1582] Writing systemd unit "NetworkManager-clean-initrd-state.service"
+I0410 14:23:23.215317    4014 update.go:1582] Writing systemd unit "aws-kubelet-nodename.service"
+I0410 14:23:23.217425    4014 update.go:1582] Writing systemd unit "aws-kubelet-providerid.service"
+I0410 14:23:23.219474    4014 update.go:1537] Writing systemd unit dropin "01-kubens.conf"
+I0410 14:23:23.221416    4014 update.go:1523] Dropin for 10-mco-default-env.conf has no content, skipping write
+I0410 14:23:23.221449    4014 update.go:1537] Writing systemd unit dropin "10-mco-profile-unix-socket.conf"
+I0410 14:23:23.223342    4014 update.go:1537] Writing systemd unit dropin "10-mco-default-madv.conf"
+I0410 14:23:24.350933    4014 update.go:1514] Preset systemd unit crio.service
+I0410 14:23:24.350973    4014 update.go:1537] Writing systemd unit dropin "mco-disabled.conf"
+I0410 14:23:24.363422    4014 update.go:1628] Could not reset unit preset for docker.socket, skipping. (Error msg: error running preset on unit: Failed to preset unit: Unit file docker.socket does not exist.
+)
+I0410 14:23:24.363466    4014 update.go:1582] Writing systemd unit "kubelet-auto-node-size.service"
+I0410 14:23:24.365373    4014 update.go:1537] Writing systemd unit dropin "01-kubens.conf"
+I0410 14:23:24.367298    4014 update.go:1523] Dropin for 10-mco-default-env.conf has no content, skipping write
+I0410 14:23:24.367344    4014 update.go:1537] Writing systemd unit dropin "10-mco-default-madv.conf"
+I0410 14:23:24.369046    4014 update.go:1582] Writing systemd unit "kubelet.service"
+I0410 14:23:24.370899    4014 update.go:1582] Writing systemd unit "kubens.service"
+I0410 14:23:24.372626    4014 update.go:1582] Writing systemd unit "machine-config-daemon-firstboot.service"
+I0410 14:23:24.374379    4014 update.go:1582] Writing systemd unit "machine-config-daemon-pull.service"
+I0410 14:23:24.376077    4014 update.go:1582] Writing systemd unit "node-valid-hostname.service"
+I0410 14:23:24.377793    4014 update.go:1582] Writing systemd unit "nodeip-configuration.service"
+I0410 14:23:24.382367    4014 update.go:1582] Writing systemd unit "ovs-configuration.service"
+I0410 14:23:24.384465    4014 update.go:1537] Writing systemd unit dropin "10-ovs-vswitchd-restart.conf"
+I0410 14:23:25.402501    4014 update.go:1514] Preset systemd unit ovs-vswitchd.service
+I0410 14:23:25.402567    4014 update.go:1537] Writing systemd unit dropin "10-ovsdb-restart.conf"
+I0410 14:23:25.404539    4014 update.go:1523] Dropin for 10-mco-default-env.conf has no content, skipping write
+I0410 14:23:25.413211    4014 update.go:1628] Could not reset unit preset for pivot.service, skipping. (Error msg: error running preset on unit: Failed to preset unit: Unit file pivot.service does not exist.
+)
+I0410 14:23:25.413283    4014 update.go:1523] Dropin for 10-mco-default-env.conf has no content, skipping write
+I0410 14:23:25.413304    4014 update.go:1537] Writing systemd unit dropin "mco-controlplane-nice.conf"
+I0410 14:23:26.379335    4014 update.go:1514] Preset systemd unit rpm-ostreed.service
+I0410 14:23:26.379374    4014 update.go:1537] Writing systemd unit dropin "mco-disabled.conf"
+I0410 14:23:26.395055    4014 update.go:1628] Could not reset unit preset for zincati.service, skipping. (Error msg: error running preset on unit: Failed to preset unit: Unit file zincati.service does not exist.
+)
+I0410 14:23:27.646794    4014 update.go:1492] Enabled systemd units: [NetworkManager-clean-initrd-state.service aws-kubelet-nodename.service aws-kubelet-providerid.service kubelet-auto-node-size.service kubelet.service machine-config-daemon-firstboot.service machine-config-daemon-pull.service node-valid-hostname.service openvswitch.service ovs-configuration.service ovsdb-server.service]
+I0410 14:23:28.584428    4014 update.go:1503] Disabled systemd units [kubens.service nodeip-configuration.service]
+I0410 14:23:28.584478    4014 update.go:1310] Deleting stale data
+I0410 14:23:28.584608    4014 update.go:1806] Writing SSHKeys at "/home/core/.ssh/authorized_keys"
+I0410 14:23:28.717447    4014 update.go:2118] Node has Desired Config rendered-master-e52602b4b0ce947dcf081ee57704f0b6, skipping reboot
+I0410 14:23:28.721469    4014 daemon.go:1254] Current config: rendered-master-846b5b0751bab516cd000e1aa8e2ad0e
+I0410 14:23:28.721503    4014 daemon.go:1255] Desired config: rendered-master-e52602b4b0ce947dcf081ee57704f0b6
+I0410 14:23:28.721508    4014 daemon.go:1257] state: Done
+I0410 14:23:28.721519    4014 daemon.go:1622] Completing pending config rendered-master-e52602b4b0ce947dcf081ee57704f0b6
+I0410 14:23:38.793776    4014 update.go:2118] Update completed for config rendered-master-e52602b4b0ce947dcf081ee57704f0b6 and node has been successfully uncordoned
+I0410 14:23:38.820404    4014 daemon.go:1650] In desired config rendered-master-e52602b4b0ce947dcf081ee57704f0b6
+I0410 14:23:38.836325    4014 config_drift_monitor.go:246] Config Drift Monitor started
+I0410 14:23:38.836389    4014 update.go:2148] Removing SIGTERM protection
