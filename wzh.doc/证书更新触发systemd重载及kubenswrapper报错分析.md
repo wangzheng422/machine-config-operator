@@ -144,7 +144,10 @@ sequenceDiagram
 ## 结论
 
 - **证书更新时，MachineConfigDaemon替换证书文件，不会触发节点重启**
-- **`nodeip-configuration.service`中显式调用`systemctl daemon-reload`，导致多次systemd reload**
+- **`nodeip-configuration.service`是一个独立的oneshot服务，负责生成节点IP配置**
+- **该服务的`ExecStart`中显式调用`systemctl daemon-reload`，导致多次systemd reload**
+- **`nodeip-configuration.service`被`ovs-configuration.service`等声明为`After`依赖，自动启动**
+- **没有代码显式调用该服务，完全由systemd依赖关系管理**
 - **kubelet动态监控证书，替换时watch失效，报错后重新加载新证书**
 - **kube-apiserver Pod的重启是Kubernetes层面控制的，与宿主机systemd无关**
 - **kubelet.service未重启，其上游依赖服务也未重启**
