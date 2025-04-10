@@ -159,6 +159,25 @@ sequenceDiagram
 
 ---
 
+### MachineConfigOperator中涉及的systemd操作总结
+
+- **代码中调用 `systemctl daemon-reload`**
+  - `pkg/daemon/rpm-ostree.go` 中通过 `runCmdSync("systemctl", "daemon-reload")` 直接执行。
+- **代码中调用 `systemctl reload <服务>`**
+  - `pkg/daemon/update.go` 中的 `reloadService()` 函数会 reload 指定服务（如 crio）。
+- **代码中调用 `systemctl reboot`**
+  - `pkg/daemon/daemon.go` 中通过 shell 执行节点重启。
+- **代码中调用 `systemctl enable/disable/preset`**
+  - `pkg/daemon/update.go` 中管理 systemd unit 的启用状态。
+- **systemd unit 文件中调用 `systemctl daemon-reload`**
+  - `templates/common/_base/units/nodeip-configuration.service.yaml`
+  - `templates/common/on-prem/units/nodeip-configuration.service.yaml`
+- **脚本中调用 `systemctl restart`**
+  - `templates/common/on-prem/files/resolv-prepender.yaml` 中重启 `systemd-resolved`
+  - `templates/common/on-prem/files/NetworkManager-resolv-prepender.yaml` 中启动/kill 相关服务
+
+---
+
 ## 参考
 
 - MachineConfigDaemon源码 `pkg/daemon/update.go`
