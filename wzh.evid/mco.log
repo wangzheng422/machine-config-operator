@@ -1,0 +1,11 @@
+machine config daemon的日志，在证书轮换的时候。
+
+
+I0410 15:59:14.239434   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23344
+I0410 15:59:15.621037   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23346
+I0410 15:59:15.950768   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23347
+I0410 15:59:17.005671   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23359
+I0410 15:59:24.486742   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23399
+I0410 15:59:24.776106   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23400
+I0410 15:59:25.127322   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23402
+I0410 15:59:25.760395   31662 certificate_writer.go:303] Certificate was synced from controllerconfig resourceVersion 23410
