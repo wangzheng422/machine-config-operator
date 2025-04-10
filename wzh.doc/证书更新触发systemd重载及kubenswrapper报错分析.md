@@ -55,8 +55,11 @@ func calculatePostConfigChangeActionFromFileDiffs(diffFileSet []string) (actions
 
 ### 3. systemd reload的触发原因
 
-- 证书文件替换后，MachineConfigDaemon未触发节点重启
-- 但会重启`nodeip-configuration.service`服务
+- 证书文件替换时，MachineConfigDaemon会重写MachineConfig中管理的文件
+- 但**MachineConfigDaemon不会自动重启任何systemd服务**
+- 这是由其源码`pkg/daemon/update.go`中`writeUnits()`逻辑决定的
+- 只有在`unit.Enabled=true`时才会enable服务，不会restart
+- 因此，`nodeip-configuration.service`的启动**不是由MachineConfigDaemon触发**
 - 该服务的`ExecStart`中**显式调用了**：
   ```
   /bin/systemctl daemon-reload
@@ -71,7 +74,7 @@ func calculatePostConfigChangeActionFromFileDiffs(diffFileSet []string) (actions
 ExecStart=/bin/bash -c "..."; \
 ExecStart=/bin/systemctl daemon-reload
 ```
-- **这不是systemd自动行为，而是`nodeip-configuration.service`显式调用的结果**
+- **这不是systemd自动行为，也不是MachineConfigDaemon重启服务导致，而是该服务被其他机制触发运行时内部显式调用的结果**
 
 ---
 
