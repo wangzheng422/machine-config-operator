@@ -53,15 +53,25 @@ func calculatePostConfigChangeActionFromFileDiffs(diffFileSet []string) (actions
 
 ---
 
-### 3. systemd自动触发daemon-reload
+### 3. systemd reload的触发原因
 
-- 证书文件替换后，systemd检测到配置变更
-- 自动执行多次`systemctl daemon-reload`
-- 日志：
+- 证书文件替换后，MachineConfigDaemon未触发节点重启
+- 但会重启`nodeip-configuration.service`服务
+- 该服务的`ExecStart`中**显式调用了**：
+  ```
+  /bin/systemctl daemon-reload
+  ```
+- 因此，日志中出现多次：
+  ```
+  systemd[1]: Reloading.
+  ```
+- 代码引用：
+```ini
+[Service]
+ExecStart=/bin/bash -c "..."; \
+ExecStart=/bin/systemctl daemon-reload
 ```
-systemd[1]: Reloading.
-```
-- **此为systemd的自动行为，非MachineConfigDaemon显式调用**
+- **这不是systemd自动行为，而是`nodeip-configuration.service`显式调用的结果**
 
 ---
 
@@ -134,8 +144,11 @@ sequenceDiagram
 ## 结论
 
 - **证书更新时，MachineConfigDaemon替换证书文件，不会触发节点重启**
-- **systemd自动检测文件变更，执行daemon-reload**
+- **`nodeip-configuration.service`中显式调用`systemctl daemon-reload`，导致多次systemd reload**
 - **kubelet动态监控证书，替换时watch失效，报错后重新加载新证书**
+- **kube-apiserver Pod的重启是Kubernetes层面控制的，与宿主机systemd无关**
+- **kubelet.service未重启，其上游依赖服务也未重启**
+- **systemd reload不会导致任何服务重启，只是重新加载配置**
 - **kubenswrapper只是包装脚本，报错来自kubelet内部**
 
 ---
