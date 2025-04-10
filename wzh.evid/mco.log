@@ -1,4 +1,4 @@
-这个是 machine-config deamon 的日志，可以看到他好像从 rpm-ostree 开始。 
+这个是 machine-config deamon 的日志， 在证书轮换的时候，可以看到他好像从 rpm-ostree 开始。 
 
 I0410 14:23:22.661425    4014 rpm-ostree.go:394] Running captured: rpm-ostree kargs
 I0410 14:23:23.023709    4014 daemon.go:593] Preflight config drift check successful (took 1.584220134s)
