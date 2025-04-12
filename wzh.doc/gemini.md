@@ -290,27 +290,28 @@ sequenceDiagram
     MCD ->>+ Systemd: Write/Modify Unit/Drop-in Files (/etc/systemd/system/...)
     Systemd ->> Systemd: Detect config change, Trigger Daemon Reload
     Note over Systemd: Reloading configuration...
-    Systemd ->>- KubensService: Potentially stops/restarts or makes ns temporarily invalid
+    Systemd ->> KubensService: Potentially stops/restarts or makes ns temporarily invalid
     MCD ->>+ Systemd: systemctl enable/disable (if needed)
     Systemd ->> Systemd: Daemon Reload (if not already triggered)
     Systemd ->>- KubensService: Potentially stops/restarts or makes ns temporarily invalid
 
     Systemd ->>+ KubeletService: Start/Restart Service (due to config change or other reason)
     KubeletService ->>+ Kubenswrapper: ExecStartPre/ExecStart calls kubenswrapper
-    Kubenswrapper ->> KubensService: Check validity of /run/kubens/mnt (ismnt)
+    Kubenswrapper ->>+ KubensService: Check validity of /run/kubens/mnt (ismnt)
+    
     alt Namespace Invalid/Unavailable (during reload window)
-        KubensService -->>- Kubenswrapper: Check Fails (namespace stale or missing)
+        KubensService ->>- Kubenswrapper: Check Fails (namespace stale or missing)
         Kubenswrapper ->> Kubenswrapper: Log "Stale or mismatched namespace"
         Kubenswrapper ->>+ KubeletProcess: exec nsenter (without --mount) /usr/bin/hyperkube kubelet ...
         KubeletProcess ->> KubeletProcess: Runs in WRONG namespace
-        KubeletProcess -->>- KubeletService: Potential runtime errors (missing mounts, etc.)
-        KubeletService -->>- Systemd: Service fails or logs errors
+        KubeletProcess ->>- KubeletService: Potential runtime errors (missing mounts, etc.)
+        KubeletService ->>- Systemd: Service fails or logs errors
     else Namespace Valid
-        KubensService -->>- Kubenswrapper: Check Succeeds
+        KubensService ->>- Kubenswrapper: Check Succeeds
         Kubenswrapper ->>+ KubeletProcess: exec nsenter --mount=/run/kubens/mnt /usr/bin/hyperkube kubelet ...
         KubeletProcess ->> KubeletProcess: Runs in CORRECT namespace
-        KubeletProcess -->>- KubeletService: Service runs normally
-        KubeletService -->>- Systemd: Service runs successfully
+        KubeletProcess ->>- KubeletService: Service runs normally
+        KubeletService ->>- Systemd: Service runs successfully
     end
 ```
 
