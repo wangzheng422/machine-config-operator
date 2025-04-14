@@ -1,4 +1,4 @@
-这是故障集群(openshift 4.12)的日志，可以看到systemd在重新加载service，这个非常奇怪。
+这是故障集群(openshift 4.12)的日志，可以看到systemd在重新加载systemd service，`[host-name] systemd[1]: Reloading.` 这个非常奇怪。但是经过测试，如果使用命令 systemctl enable <service-name> 就可以触发 systemd[1]: Reloading.
 
 Feb 26 07:21:44 [host-name] root[15730]: machine-conﬁg-daemon[2680]: Starting update from rendered-worker-3190qge54hfsds56hfv343855mh1945 to
 rendered-worker-417ca143403a745218a0a584b541d874: &{osUpdate:false kargs:false ﬁ ps:false
