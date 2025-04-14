@@ -1,0 +1,201 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0" version="26.2.12">
+  <diagram name="Page-1" id="Pj56lr4TB9N6DqUpqYSC">
+    <mxGraphModel dx="1445" dy="887" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-1" value="Certificate Management&#xa;(e.g., OCP Operator, Manual)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="229" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-2" value="K8s API" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="280" y="20" width="150" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-3" value="" style="points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="mPsqoio_gbiGz2TpQrPJ-2">
+          <mxGeometry x="70" y="103" width="10" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-4" value="" style="points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="mPsqoio_gbiGz2TpQrPJ-2">
+          <mxGeometry x="70" y="374" width="10" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-5" value="" style="points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="mPsqoio_gbiGz2TpQrPJ-2">
+          <mxGeometry x="70" y="1110" width="10" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-7" value="Machine Config Controller" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="496" y="20" width="209" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-8" value="Machine Config Daemon&#xa;(on Node)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="755" y="20" width="198" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-9" value="Node Filesystem" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="20" width="150" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-10" value="Systemd&#xa;(on Node)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="20" width="150" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-29" value="Uncordon Node" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="mPsqoio_gbiGz2TpQrPJ-10" source="mPsqoio_gbiGz2TpQrPJ-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-431" y="1210" />
+              <mxPoint x="-431" y="1240" />
+            </Array>
+            <mxPoint x="-487.31818181818153" y="1210" as="sourcePoint" />
+            <mxPoint x="-487.31818181818153" y="1240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-11" value="Kubelet&#xa;(on Node)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="20" width="150" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-12" value="Kube-apiserver Static Pod&#xa;(on Node)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;fontSize=16;labelBackgroundColor=none;fillColor=#FAE5C7;strokeColor=#0F8B8D;fontColor=#143642;" vertex="1" parent="1">
+          <mxGeometry x="1750" y="20" width="210" height="1291" as="geometry" />
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-13" value="Update Cert Secret/ConfigMap" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-1" target="mPsqoio_gbiGz2TpQrPJ-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="288" y="123" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-14" value="Ack" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-3" target="mPsqoio_gbiGz2TpQrPJ-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="291" y="171" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-15" value="Trigger Re-render (e.g., update ControllerConfig)" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-1" target="mPsqoio_gbiGz2TpQrPJ-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="420" y="250" />
+            </Array>
+            <mxPoint x="189.99736842105273" y="250" as="sourcePoint" />
+            <mxPoint x="655.9973684210524" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-16" value="Render new MachineConfig (e.g., master-e526...)" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-7" target="mPsqoio_gbiGz2TpQrPJ-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="656" y="316" />
+              <mxPoint x="656" y="346" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-17" value="Apply new MachineConfig" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-7" target="mPsqoio_gbiGz2TpQrPJ-4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="400" />
+            </Array>
+            <mxPoint x="599.9999999999998" y="400" as="sourcePoint" />
+            <mxPoint x="360" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-18" value="Ack" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-4" target="mPsqoio_gbiGz2TpQrPJ-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="395" y="438" />
+            </Array>
+            <mxPoint x="360" y="430" as="sourcePoint" />
+            <mxPoint x="604.9999999999998" y="438" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-19" value="Notify MachineConfig Update" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-2" target="mPsqoio_gbiGz2TpQrPJ-8">
+          <mxGeometry x="0.0235" y="5" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="601" y="500" />
+            </Array>
+            <mxPoint x="350.99925925925913" y="500.0000000000002" as="sourcePoint" />
+            <mxPoint x="849.74" y="500.0000000000002" as="targetPoint" />
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-20" value="Calculate Diff (files:true)" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-8" target="mPsqoio_gbiGz2TpQrPJ-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="909" y="538" />
+              <mxPoint x="909" y="568" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-21" value="Determine Action: Skip Reboot" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-8" target="mPsqoio_gbiGz2TpQrPJ-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="909" y="616" />
+              <mxPoint x="909" y="646" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-22" value="Write updated files &#xa;(incl. /etc/kubernetes/kubelet-ca.crt, &#xa;/etc/kubernetes/static-pod-resources/..., &#xa;/etc/kubernetes/ca.crt)" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-8" target="mPsqoio_gbiGz2TpQrPJ-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1117.32" y="750" />
+            </Array>
+            <mxPoint x="860.0018181818185" y="750" as="sourcePoint" />
+            <mxPoint x="1231.82" y="750" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-23" value="Write/Enable/Disable Units/Drop-ins" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-8" target="mPsqoio_gbiGz2TpQrPJ-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1110" y="830" />
+            </Array>
+            <mxPoint x="860" y="830" as="sourcePoint" />
+            <mxPoint x="1420.74" y="830.0000000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-28" value="Ack" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-5" target="mPsqoio_gbiGz2TpQrPJ-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="1170" />
+              <mxPoint x="804" y="1042" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-24" value="Reload Configuration (multiple times)" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-10" target="mPsqoio_gbiGz2TpQrPJ-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1486" y="930" />
+              <mxPoint x="1486" y="960" />
+            </Array>
+            <mxPoint x="1423.6818181818185" y="930" as="sourcePoint" />
+            <mxPoint x="1423.6818181818185" y="960" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-25" value="INotify event for /etc/kubernetes/kubelet-ca.crt" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-9" target="mPsqoio_gbiGz2TpQrPJ-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1444.91" y="1040" />
+            </Array>
+            <mxPoint x="1233.6818181818185" y="1040" as="sourcePoint" />
+            <mxPoint x="1634.5" y="1040" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-26" value="Dynamically reload kubelet-ca.crt" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-11" target="mPsqoio_gbiGz2TpQrPJ-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1686" y="1056" />
+              <mxPoint x="1686" y="1086" />
+            </Array>
+            <mxPoint x="1633.681818181818" y="1056" as="sourcePoint" />
+            <mxPoint x="1633.681818181818" y="1086" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-27" value="Update Node Annotation (State: Done)" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-8" target="mPsqoio_gbiGz2TpQrPJ-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="817" y="1134" />
+            </Array>
+            <mxPoint x="863.5" y="1134" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mPsqoio_gbiGz2TpQrPJ-32" value="Dynamically reload cert in pv" style="curved=1;endArrow=block;rounded=0;fontSize=16;labelBackgroundColor=none;strokeColor=#A8201A;fontColor=default;entryX=0.513;entryY=0.922;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="mPsqoio_gbiGz2TpQrPJ-12" target="mPsqoio_gbiGz2TpQrPJ-12">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1952" y="1180" />
+              <mxPoint x="1952" y="1210" />
+            </Array>
+            <mxPoint x="1901.681818181819" y="1180" as="sourcePoint" />
+            <mxPoint x="1901.681818181819" y="1210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

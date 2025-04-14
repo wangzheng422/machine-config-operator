@@ -146,7 +146,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
     ```
     Kubelet **没有**因为这次 MCO 更新而重启。
 
-*   **Kube-apiserver (静态 Pod):** Kubelet 负责管理静态 Pod。如果 Kube-apiserver Pod 定义中挂载的 Secret 或 ConfigMap（包含其服务证书、客户端 CA 等）的内容发生变化，Kubelet 会检测到并**重启**该静态 Pod。MCD 本身不直接重启 Kube-apiserver。在提供的日志片段中，**没有观察到** Kube-apiserver 静态 Pod 在 MCD 更新期间或之后立即重启的明确证据。重启是否发生取决于 Kube-apiserver Pod 具体挂载了哪些证书资源，以及这些资源的源 Secret/ConfigMap 是否真的发生了变化并被 Kubelet 检测到。
+*   **Kube-apiserver (静态 Pod):** Kubelet 负责管理静态 Pod。如果 Kube-apiserver Pod 定义中挂载的 Secret 或 ConfigMap（包含其服务证书、客户端 CA 等）的内容发生变化，Kubelet 会检测到并**重启**该静态 Pod。MCD 本身不直接重启 Kube-apiserver。在提供的日志片段中，**没有观察到** Kube-apiserver 静态 Pod 在 MCD 更新期间或之后立即重启的明确证据。重启是否发生取决于 Kube-apiserver Pod 具体挂载了哪些证书资源，以及这些资源的源 Secret/ConfigMap 是否真的发生了变化并被 Kubelet 检测到。而 openshift 4.12 的 kube-apiserver 使用 pv 的方式挂载本地目录，读取证书，所有 kubelet 检测不到 pv 内部证书的变化，于是 kubelet 并没有重启 kube-apiserver pod，而是 kube-apiserver pod 内部应用感知到了证书编号，重新读取了证书，而不是重启进程。
 
 ## 5. 时序图 (Mermaid)
 
@@ -154,7 +154,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
 sequenceDiagram
     participant CertMgmt as Certificate Management<br>(e.g., OCP Operator, Manual)
     participant K8sAPI as K8s API
-    participant OtherComp as Other Components<br>(e.g., CVO)
+    %% participant OtherComp as Other Components<br>(e.g., CVO)
     participant MCC as Machine Config Controller
     participant MCD as Machine Config Daemon<br>(on Node)
     participant NodeFS as Node Filesystem
@@ -164,15 +164,15 @@ sequenceDiagram
 
     CertMgmt->>+K8sAPI: Update Cert Secret/ConfigMap
     K8sAPI-->>-CertMgmt: Ack
-    Note over K8sAPI, OtherComp: Other components might react
-    OtherComp->>+MCC: Trigger Re-render (e.g., update ControllerConfig)
+    %% Note over K8sAPI, OtherComp: Other components might react
+    CertMgmt->>+MCC: Trigger Re-render (e.g., update ControllerConfig)
     MCC->>MCC: Render new MachineConfig (e.g., master-e526...)
     MCC->>+K8sAPI: Apply new MachineConfig
     K8sAPI-->>-MCC: Ack
     K8sAPI-->>+MCD: Notify MachineConfig Update
     MCD->>MCD: Calculate Diff (files:true)
     MCD->>MCD: Determine Action: Skip Reboot
-    MCD->>NodeFS: Write updated files (incl. /etc/kubernetes/kubelet-ca.crt, /etc/pki/..., /etc/kubernetes/ca.crt)
+    MCD->>NodeFS: Write updated files <br>(incl. /etc/kubernetes/kubelet-ca.crt, <br>/etc/kubernetes/static-pod-resources/..., <br>/etc/kubernetes/ca.crt)
     MCD->>Systemd: Write/Enable/Disable Units/Drop-ins
     Systemd->>Systemd: Reload Configuration (multiple times)
     NodeFS-->>Kubelet: INotify event for /etc/kubernetes/kubelet-ca.crt
@@ -180,8 +180,7 @@ sequenceDiagram
     MCD->>+K8sAPI: Update Node Annotation (State: Done)
     K8sAPI-->>-MCD: Ack
     MCD->>MCD: Uncordon Node
-
-    Note over Kubelet, KubeAPIServer: Kubelet monitors static pod manifests & mounts.<br>If APIServer's mounted certs (from Secrets/CMs) change,<br>Kubelet *would* restart it. (Not observed in logs).
+    KubeAPIServer->>KubeAPIServer: Dynamically reload certs in pv
 
 ```
 
