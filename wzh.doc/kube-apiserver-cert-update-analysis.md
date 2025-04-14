@@ -1,6 +1,6 @@
-# OpenShift Kube-apiserver 相关证书更新流程分析
+# OpenShift 4.12 Kube-apiserver 相关证书更新流程分析
 
-本文档分析了 OpenShift 集群中与 Kube-apiserver 相关的证书更新时所触发的流程，重点关注 Machine Config Operator (MCO) 的角色、涉及的组件、证书存储位置以及更新对 Kubelet 和 Kube-apiserver 静态 Pod 的影响。
+本文档分析了 OpenShift 4.12 集群中与 [Kube-apiserver](https://github.com/openshift/cluster-kube-apiserver-operator/tree/release-4.12) 相关的证书更新时所触发的流程，重点关注 [Machine Config Operator (MCO)](https://github.com/openshift/machine-config-operator/tree/release-4.12) 的角色、涉及的组件、证书存储位置以及更新对 Kubelet 和 Kube-apiserver 静态 Pod 的影响。
 
 ## 1. 证书存储位置
 
@@ -30,7 +30,7 @@ MCO 本身通常不直接监控大多数证书类 Secret/ConfigMap 的变化（`
     *   更新了 MCO 模板中引用的某个 ConfigMap 或 Secret。
 3.  **MCC 生成新配置:** Machine Config Controller (MCC) 检测到其依赖资源的变更，重新渲染模板，生成一个新的 `MachineConfig` 对象（例如从 `rendered-master-846b...` 变为 `rendered-master-e526...`）。
 
-**日志证据 (`wzh.evid/mco.log` - 已脱敏):**
+**日志证据 (`mco.log` - 已脱敏):**
 
 ```log
 I0410 14:23:23.081875    4014 update.go:542] Checking Reconcilable for config rendered-master-[...] to rendered-master-[...]
@@ -72,7 +72,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
             return nil
         }
         ```
-        **日志证据 (`wzh.evid/mco.log` - 已脱敏):**
+        **日志证据 (`mco.log` - 已脱敏):**
         ```log
         I0410 14:23:23.144161    4014 update.go:1650] Writing file "/etc/pki/ca-trust/source/anchors/openshift-config-user-ca-bundle.crt"
         I0410 14:23:23.175331    4014 update.go:1650] Writing file "/etc/kubernetes/kubelet-ca.crt"
@@ -103,7 +103,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
             return nil
         }
         ```
-        **日志证据 (`wzh.evid/mco.log` - 已脱敏):**
+        **日志证据 (`mco.log` - 已脱敏):**
         ```log
         I0410 14:23:23.212378    4014 update.go:1582] Writing systemd unit "NetworkManager-clean-initrd-state.service"
         I0410 14:23:24.367298    4014 update.go:1537] Writing systemd unit dropin "10-mco-default-madv.conf"
@@ -111,7 +111,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
         I0410 14:23:28.584428    4014 update.go:1503] Disabled systemd units [...]
         ```
 4.  **决定后续动作:** 根据计算出的行动类型执行。在此次观察到的场景中，尽管有多个文件（包括 CA 和 systemd 相关文件）被修改，MCD 最终决定跳过重启。
-    **日志证据 (`wzh.evid/mco.log` & `wzh.evid/coreos.log` - 已脱敏):**
+    **日志证据 (`mco.log` & `coreos.log` - 已脱敏):**
     ```log
     # mco.log
     I0410 14:23:28.717447    4014 update.go:2118] Node has Desired Config rendered-master-[...], skipping reboot
@@ -123,7 +123,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
 ## 4. 组件响应
 
 *   **Systemd:** 当 MCD 写入或修改 `/etc/systemd/system/` 目录下的文件（Units 或 Drop-ins）或运行 `systemctl enable/disable` 时，Systemd 会自动检测到变化并重新加载其配置。
-    **日志证据 (`wzh.evid/node.log` & `wzh.evid/coreos.log` - 已脱敏):**
+    **日志证据 (`node.log` & `coreos.log` - 已脱敏):**
     ```log
     # node.log
     Apr 10 14:23:23 ip-[...] systemd[1]: Reloading.
@@ -135,7 +135,7 @@ Machine Config Daemon (MCD) 在每个节点上运行，负责应用 `MachineConf
     这个 `Reloading` 行为是由 MCD 对 systemd 配置文件或单元状态的操作触发的，是 systemd 的标准行为。
 
 *   **Kubelet:** Kubelet 监控其使用的证书文件。当 MCD 更新 `/etc/kubernetes/kubelet-ca.crt` 时，Kubelet 会检测到变化并动态重新加载该 CA 证书，无需重启 Kubelet 进程。
-    **日志证据 (`wzh.evid/node.log` & `wzh.evid/coreos.log` - 已脱敏):**
+    **日志证据 (`node.log` & `coreos.log` - 已脱敏):**
     ```log
     # node.log
     Apr 10 14:23:23 ip-[...] kubenswrapper[2241]: I0410 14:23:23.175393 dynamic_cafile_content.go:211] "Failed to remove file watch, it may have been deleted" file="/etc/kubernetes/kubelet-ca.crt"
