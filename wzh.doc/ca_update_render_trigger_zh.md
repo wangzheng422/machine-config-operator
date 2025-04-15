@@ -12,9 +12,10 @@
 
 2.  **ControllerConfig 更新**: 集群中的**另一个控制器**（例如负责证书管理或集群配置的控制器）监听到 Secret 的变化，并相应地更新 MCO 的主 `ControllerConfig` 对象（通常名为 `machine-config`）。这个更新可能涉及修改 `spec.kubeAPIServerServingCAData` 字段，或者其他间接引用该 CA 的字段。
 
-3.  **Template Controller 触发 (通过 ControllerConfig)**: Template Controller (`pkg/controller/template/template_controller.go`) 监听 `ControllerConfig` 资源的变更。当它检测到 `ControllerConfig` 对象被更新时，其 `updateControllerConfig` 事件处理器会被调用，并将该 `ControllerConfig` 加入其工作队列。
+3.  **Template Controller 触发 (通过 ControllerConfig 更新)**: Template Controller (`pkg/controller/template/template_controller.go`) **监听 `ControllerConfig` 资源的变更**。当它检测到 `ControllerConfig` 对象在第 2 步中被更新时，其 `updateControllerConfig` 事件处理器会被调用，并将该 `ControllerConfig` 加入其工作队列。**注意：** Template Controller 虽然也监听 Secret 变化，但其 `filterSecret` 函数会忽略除 `pull-secret` 之外的 Secret 更新，因此 CA Secret 的更新本身**不会**通过 Secret 事件处理路径直接触发 Template Controller。触发点是 `ControllerConfig` 对象的更新事件。
     ```go
     // pkg/controller/template/template_controller.go - 在 New() 函数中
+    // 这个处理器负责响应 ControllerConfig 的更新
     ccInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
         // ...
         UpdateFunc: ctrl.updateControllerConfig, // 触发 enqueueControllerConfig
@@ -46,4 +47,4 @@
 
 ## 结论
 
-更新 `kube-apiserver-to-kubelet-signer` CA 确实会触发新的 MachineConfig Render，但这并非由 Render Controller 直接监听 Secret 变化导致。其触发路径是：**Secret 更新 -> 其他控制器更新 ControllerConfig -> Template Controller 检测到 ControllerConfig 更新并重新生成模板 MC -> Render Controller 检测到模板 MC 更新并生成最终的 Rendered MC**。这是一个控制器协作完成的间接触发过程。
+更新 `kube-apiserver-to-kubelet-signer` CA 确实会触发新的 MachineConfig Render。其触发路径是：**CA Secret 更新 -> 其他控制器更新 ControllerConfig 对象 -> Template Controller 检测到 ControllerConfig 的更新事件（而非 CA Secret 的更新事件）并重新生成模板 MC -> Render Controller 检测到模板 MC 更新并生成最终的 Rendered MC**。这是一个依赖于 `ControllerConfig` 对象作为中间桥梁、由多个控制器协作完成的间接触发过程。Template Controller 对 CA Secret 本身变化的直接监听是被 `filterSecret` 函数所阻止的。
